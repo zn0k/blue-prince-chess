@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Room Draft Tracker</title>
+  <style>
+    body { font-family: sans-serif; margin: 1rem; }
+    h1 { margin-bottom: 0.5rem; }
+    .container { display: flex; gap: 2rem; }
+    .panel { flex: 1; }
+    .badge { display: inline-block; padding: 0.25rem 0.5rem; margin: 0.25rem; background: #eee; border-radius: 4px; }
+    ul { list-style: none; padding: 0; }
+    li { margin-bottom: 0.25rem; }
+  </style>
+</head>
+<body>
+  <h1>Room Draft Tracker</h1>
+  <button id="resetBtn">Reset All</button>
+  <div class="container">
+    <div class="panel" id="rooms-panel">
+      <h2>Rooms</h2>
+      <ul id="room-list"></ul>
+    </div>
+    <div class="panel">
+      <h2>Collected Pieces</h2>
+      <div id="collected"></div>
+      <h2>Still Needed</h2>
+      <div id="needed"></div>
+    </div>
+  </div>
+
+  <script>
+    // Data model: rooms and their pieces
+    const roomData = [
+        { room: 'attic', piece: 'bishop' },
+        { room: 'bedroom', piece: 'pawn' },
+        { room: 'chapel', piece: 'bishop' },
+        { room: 'clocktower', piece: 'rook' },
+        { room: 'conservatory', piece: 'rook' },
+        { room: 'den', piece: 'pawn' },
+        { room: 'dining hall', piece: 'pawn' },
+        { room: 'dormitory', piece: 'pawn' },
+        { room: 'drafting room', piece: 'pawn' },
+        { room: 'guest room', piece: 'pawn' },
+        { room: "her ladyship's den", piece: 'queen' },
+        { room: 'nursery', piece: 'pawn' },
+        { room: 'observatory', piece: 'knight' },
+        { room: 'office', piece: 'king' },
+        { room: 'parlor', piece: 'pawn' },
+        { room: 'rumpus room', piece: 'bishop' },
+        { room: 'security', piece: 'knight' },
+        { room: 'solarium', piece: 'pawn' },
+        { room: 'store room', piece: 'pawn' },
+        { room: 'study', piece: 'queen' },
+        { room: 'throne room', piece: 'king' },
+        { room: 'vault', piece: 'rook' },
+    ];
+
+    const allPieces = ['pawn','knight','bishop','rook','queen','king'];
+    let selectedRooms = new Set();
+
+    // Load from localStorage
+    if (localStorage.getItem('selected')) {
+      JSON.parse(localStorage.getItem('selected')).forEach(r => selectedRooms.add(r));
+    }
+
+    const roomListEl = document.getElementById('room-list');
+    const collectedEl = document.getElementById('collected');
+    const neededEl = document.getElementById('needed');
+    const resetBtn = document.getElementById('resetBtn');
+
+    function renderRooms() {
+      roomListEl.innerHTML = '';
+      roomData.forEach(({room, piece}) => {
+        const li = document.createElement('li');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.id = room;
+        cb.checked = selectedRooms.has(room);
+        cb.addEventListener('change', () => onToggle(room));
+        const label = document.createElement('label');
+        label.htmlFor = room;
+        label.textContent = `${room} (${piece})`;
+        li.append(cb, label);
+        roomListEl.append(li);
+      });
+    }
+
+    function onToggle(room) {
+      if (selectedRooms.has(room)) selectedRooms.delete(room);
+      else selectedRooms.add(room);
+      localStorage.setItem('selected', JSON.stringify([...selectedRooms]));
+      renderStatus();
+    }
+
+    function renderStatus() {
+      const have = new Set();
+      selectedRooms.forEach(r => {
+        const p = roomData.find(x => x.room === r)?.piece;
+        if (p) have.add(p);
+      });
+
+      // Collected badges
+      collectedEl.innerHTML = '';
+      have.forEach(p => {
+        const span = document.createElement('span');
+        span.className = 'badge';
+        span.textContent = p;
+        collectedEl.append(span);
+      });
+
+      // Needed pieces and rooms
+      neededEl.innerHTML = '';
+      allPieces.filter(p => !have.has(p)).forEach(p => {
+        const section = document.createElement('div');
+        const title = document.createElement('strong');
+        title.textContent = p;
+        section.append(title);
+        const rooms = roomData.filter(x => x.piece === p).map(x => x.room);
+        const list = document.createElement('ul');
+        rooms.forEach(r => {
+          const li = document.createElement('li');
+          li.textContent = r;
+          list.append(li);
+        });
+        section.append(list);
+        neededEl.append(section);
+      });
+    }
+
+    resetBtn.addEventListener('click', () => {
+      selectedRooms.clear();
+      localStorage.removeItem('selected');
+      renderRooms(); renderStatus();
+    });
+
+    // Initialize
+    renderRooms();
+    renderStatus();
+  </script>
+</body>
+</html>
+
